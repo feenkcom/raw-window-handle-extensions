@@ -54,12 +54,12 @@ pub enum RawDisplayHandleType {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[repr(C)]
 pub struct VeryRawWindowHandle {
-    handle_type: RawWindowHandleType,
-    ptr_1: *mut c_void,
-    ptr_2: *mut c_void,
-    ptr_3: *mut c_void,
-    id_1: u64,
-    id_2: u64,
+    pub handle_type: RawWindowHandleType,
+    pub ptr_1: *mut c_void,
+    pub ptr_2: *mut c_void,
+    pub ptr_3: *mut c_void,
+    pub id_1: u64,
+    pub id_2: u64,
 }
 
 impl VeryRawWindowHandle {
@@ -78,9 +78,9 @@ impl VeryRawWindowHandle {
 #[derive(Clone, Debug)]
 #[repr(C)]
 pub struct VeryRawDisplayHandle {
-    handle_type: RawDisplayHandleType,
-    ptr_1: *mut c_void,
-    id_1: u64,
+    pub handle_type: RawDisplayHandleType,
+    pub ptr_1: *mut c_void,
+    pub id_1: u64,
 }
 
 impl VeryRawDisplayHandle {
