@@ -1,0 +1,12 @@
+[package]
+name = "raw-window-handle-extensions"
+version = "0.5.0"
+authors = ["feenk gmbh. <contact@feenk.com>"]
+edition = "2021"
+repository = "https://github.com/feenkcom/raw-window-handle-extensions/tree/main"
+license = "MIT"
+keywords = ["ffi"]
+description = "C representation for the raw-window-handle crate"
+
+[dependencies]
+raw-window-handle = "0.5"
