@@ -1,4 +1,3 @@
-use std::error::Error;
 use std::ffi::c_void;
 
 use raw_window_handle::{RawDisplayHandle, RawWindowHandle};
@@ -75,11 +74,9 @@ impl VeryRawWindowHandle {
         }
     }
 
-    pub unsafe fn with_ref<R>(
-        pointer: *mut Self,
-        op: impl FnOnce(&Self) -> Result<R, Box<dyn Error>>,
-    ) -> Result<R, Box<dyn Error>> {
-        with_ref(pointer, op)
+    pub unsafe fn from_ptr<'a>(ptr: *mut Self) -> Result<&'a Self,RawError> {
+        ptr.as_ref()
+            .ok_or_else(||RawError::NullPointer)
     }
 }
 
@@ -114,11 +111,9 @@ impl VeryRawDisplayHandle {
         }
     }
 
-    pub unsafe fn with_ref<R>(
-        pointer: *mut Self,
-        op: impl FnOnce(&Self) -> Result<R, Box<dyn Error>>,
-    ) -> Result<R, Box<dyn Error>> {
-        with_ref(pointer, op)
+    pub unsafe fn from_ptr<'a>(ptr: *mut Self) -> Result<&'a Self,RawError> {
+        ptr.as_ref()
+            .ok_or_else(||RawError::NullPointer)
     }
 }
 
@@ -223,17 +218,5 @@ impl TryFrom<VeryRawDisplayHandle> for RawDisplayHandle {
             RawDisplayHandleType::Android => Ok(RawDisplayHandle::Android(value.into())),
             RawDisplayHandleType::Haiku => Ok(RawDisplayHandle::Haiku(value.into())),
         }
-    }
-}
-
-unsafe fn with_ref<T, R>(
-    pointer: *mut T,
-    op: impl FnOnce(&T) -> Result<R, Box<dyn Error>>,
-) -> Result<R, Box<dyn Error>> {
-    if let Some(reference) = pointer.as_ref() {
-        op(reference)
-    }
-    else {
-        Err(Box::new(RawError::NullPointer).into())
     }
 }

@@ -1,6 +1,6 @@
 [package]
 name = "raw-window-handle-extensions"
-version = "0.5.1"
+version = "0.5.2"
 authors = ["feenk gmbh. <contact@feenk.com>"]
 edition = "2021"
 repository = "https://github.com/feenkcom/raw-window-handle-extensions/tree/main"
