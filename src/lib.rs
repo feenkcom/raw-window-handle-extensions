@@ -1,8 +1,9 @@
+use std::error::Error;
 use std::ffi::c_void;
 
 use raw_window_handle::{RawDisplayHandle, RawWindowHandle};
 
-use crate::error::{UnsupportedDisplayHandleError, UnsupportedWindowHandleError};
+use crate::error::RawError;
 
 mod android;
 mod appkit;
@@ -73,6 +74,27 @@ impl VeryRawWindowHandle {
             id_2: Default::default(),
         }
     }
+
+    pub unsafe fn with_ref<R>(
+        pointer: *mut Self,
+        op: impl FnOnce(&Self) -> Result<R, Box<dyn Error>>,
+    ) -> Result<R, Box<dyn Error>> {
+        with_ref(pointer, op)
+    }
+}
+
+impl From<VeryRawWindowHandle> for *mut VeryRawWindowHandle {
+    fn from(value: VeryRawWindowHandle) -> Self {
+        Box::into_raw(Box::new(value))
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn very_raw_window_handle_drop(pointer: *mut VeryRawWindowHandle) {
+    if pointer.is_null() {
+        return;
+    }
+    unsafe { Box::from_raw(pointer) };
 }
 
 #[derive(Clone, Debug)]
@@ -91,6 +113,27 @@ impl VeryRawDisplayHandle {
             id_1: Default::default(),
         }
     }
+
+    pub unsafe fn with_ref<R>(
+        pointer: *mut Self,
+        op: impl FnOnce(&Self) -> Result<R, Box<dyn Error>>,
+    ) -> Result<R, Box<dyn Error>> {
+        with_ref(pointer, op)
+    }
+}
+
+impl From<VeryRawDisplayHandle> for *mut VeryRawDisplayHandle {
+    fn from(value: VeryRawDisplayHandle) -> Self {
+        Box::into_raw(Box::new(value))
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn very_raw_display_handle_drop(pointer: *mut VeryRawDisplayHandle) {
+    if pointer.is_null() {
+        return;
+    }
+    unsafe { Box::from_raw(pointer) };
 }
 
 impl From<RawWindowHandle> for VeryRawWindowHandle {
@@ -115,12 +158,12 @@ impl From<RawWindowHandle> for VeryRawWindowHandle {
 }
 
 impl TryFrom<VeryRawWindowHandle> for RawWindowHandle {
-    type Error = UnsupportedWindowHandleError;
+    type Error = RawError;
 
     fn try_from(value: VeryRawWindowHandle) -> Result<Self, Self::Error> {
         match value.handle_type {
             RawWindowHandleType::Unknown => {
-                Err(UnsupportedWindowHandleError::new(value.handle_type))
+                Err(RawError::UnsupportedWindowHandle(value.handle_type))
             }
             RawWindowHandleType::UiKit => Ok(RawWindowHandle::UiKit(value.into())),
             RawWindowHandleType::AppKit => Ok(RawWindowHandle::AppKit(value.into())),
@@ -160,12 +203,12 @@ impl From<RawDisplayHandle> for VeryRawDisplayHandle {
 }
 
 impl TryFrom<VeryRawDisplayHandle> for RawDisplayHandle {
-    type Error = UnsupportedDisplayHandleError;
+    type Error = RawError;
 
     fn try_from(value: VeryRawDisplayHandle) -> Result<Self, Self::Error> {
         match value.handle_type {
             RawDisplayHandleType::Unknown => {
-                Err(UnsupportedDisplayHandleError::new(value.handle_type))
+                Err(RawError::UnsupportedDisplayHandle(value.handle_type))
             }
             RawDisplayHandleType::UiKit => Ok(RawDisplayHandle::UiKit(value.into())),
             RawDisplayHandleType::AppKit => Ok(RawDisplayHandle::AppKit(value.into())),
@@ -180,5 +223,17 @@ impl TryFrom<VeryRawDisplayHandle> for RawDisplayHandle {
             RawDisplayHandleType::Android => Ok(RawDisplayHandle::Android(value.into())),
             RawDisplayHandleType::Haiku => Ok(RawDisplayHandle::Haiku(value.into())),
         }
+    }
+}
+
+unsafe fn with_ref<T, R>(
+    pointer: *mut T,
+    op: impl FnOnce(&T) -> Result<R, Box<dyn Error>>,
+) -> Result<R, Box<dyn Error>> {
+    if let Some(reference) = pointer.as_ref() {
+        op(reference)
+    }
+    else {
+        Err(Box::new(RawError::NullPointer).into())
     }
 }

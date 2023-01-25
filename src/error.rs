@@ -3,39 +3,26 @@ use std::error::Error;
 use std::fmt::{Debug, Display, Formatter};
 
 #[derive(Debug)]
-pub struct UnsupportedWindowHandleError {
-    handle_type: RawWindowHandleType,
+pub enum RawError {
+    UnsupportedWindowHandle(RawWindowHandleType),
+    UnsupportedDisplayHandle(RawDisplayHandleType),
+    NullPointer,
 }
 
-impl UnsupportedWindowHandleError {
-    pub fn new(handle_type: RawWindowHandleType) -> Self {
-        Self { handle_type }
-    }
-}
-
-impl Display for UnsupportedWindowHandleError {
+impl Display for RawError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Unsupported window handle type: {:?}", self.handle_type)
+        match self {
+            RawError::UnsupportedWindowHandle(handle_type) => {
+                write!(f, "Unsupported window handle type: {:?}", handle_type)
+            }
+            RawError::UnsupportedDisplayHandle(handle_type) => {
+                write!(f, "Unsupported display handle type: {:?}", handle_type)
+            }
+            RawError::NullPointer => {
+                write!(f, "Nil pointer")
+            }
+        }
     }
 }
 
-impl Error for UnsupportedWindowHandleError {}
-
-#[derive(Debug)]
-pub struct UnsupportedDisplayHandleError {
-    handle_type: RawDisplayHandleType,
-}
-
-impl UnsupportedDisplayHandleError {
-    pub fn new(handle_type: RawDisplayHandleType) -> Self {
-        Self { handle_type }
-    }
-}
-
-impl Display for UnsupportedDisplayHandleError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Unsupported display handle type: {:?}", self.handle_type)
-    }
-}
-
-impl Error for UnsupportedDisplayHandleError {}
+impl Error for RawError {}
