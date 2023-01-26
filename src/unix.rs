@@ -2,7 +2,7 @@ use raw_window_handle::{
     DrmDisplayHandle, DrmWindowHandle, GbmDisplayHandle, GbmWindowHandle, WaylandDisplayHandle,
     WaylandWindowHandle, XcbDisplayHandle, XcbWindowHandle, XlibDisplayHandle, XlibWindowHandle,
 };
-use std::ffi::c_int;
+use std::ffi::{c_int, c_ulong};
 
 use crate::{RawDisplayHandleType, RawWindowHandleType, VeryRawDisplayHandle, VeryRawWindowHandle};
 
@@ -13,8 +13,8 @@ impl From<XlibWindowHandle> for VeryRawWindowHandle {
             ptr_1: std::ptr::null_mut(),
             ptr_2: std::ptr::null_mut(),
             ptr_3: std::ptr::null_mut(),
-            id_1: value.window,
-            id_2: value.visual_id,
+            id_1: value.window as u64,
+            id_2: value.visual_id as u64,
         }
     }
 }
@@ -23,8 +23,8 @@ impl From<VeryRawWindowHandle> for XlibWindowHandle {
     fn from(value: VeryRawWindowHandle) -> Self {
         assert_eq!(value.handle_type, RawWindowHandleType::Xlib);
         let mut window_handle = Self::empty();
-        window_handle.window = value.id_1;
-        window_handle.visual_id = value.id_2;
+        window_handle.window = value.id_1 as c_ulong;
+        window_handle.visual_id = value.id_2 as c_ulong;
         window_handle
     }
 }
