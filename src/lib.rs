@@ -74,9 +74,8 @@ impl VeryRawWindowHandle {
         }
     }
 
-    pub unsafe fn from_ptr<'a>(ptr: *mut Self) -> Result<&'a Self,RawError> {
-        ptr.as_ref()
-            .ok_or_else(||RawError::NullPointer)
+    pub unsafe fn from_ptr<'a>(ptr: *mut Self) -> Result<&'a Self, RawError> {
+        ptr.as_ref().ok_or_else(|| RawError::NullPointer)
     }
 }
 
@@ -91,7 +90,7 @@ pub extern "C" fn very_raw_window_handle_drop(pointer: *mut VeryRawWindowHandle)
     if pointer.is_null() {
         return;
     }
-    unsafe { Box::from_raw(pointer) };
+    unsafe { let _ = Box::from_raw(pointer); };
 }
 
 #[derive(Clone, Debug)]
@@ -111,9 +110,8 @@ impl VeryRawDisplayHandle {
         }
     }
 
-    pub unsafe fn from_ptr<'a>(ptr: *mut Self) -> Result<&'a Self,RawError> {
-        ptr.as_ref()
-            .ok_or_else(||RawError::NullPointer)
+    pub unsafe fn from_ptr<'a>(ptr: *mut Self) -> Result<&'a Self, RawError> {
+        ptr.as_ref().ok_or_else(|| RawError::NullPointer)
     }
 }
 
@@ -128,7 +126,7 @@ pub extern "C" fn very_raw_display_handle_drop(pointer: *mut VeryRawDisplayHandl
     if pointer.is_null() {
         return;
     }
-    unsafe { Box::from_raw(pointer) };
+    unsafe { let _ = Box::from_raw(pointer); };
 }
 
 impl From<RawWindowHandle> for VeryRawWindowHandle {

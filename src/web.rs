@@ -17,8 +17,7 @@ impl From<WebWindowHandle> for VeryRawWindowHandle {
 impl From<VeryRawWindowHandle> for WebWindowHandle {
     fn from(value: VeryRawWindowHandle) -> Self {
         assert_eq!(value.handle_type, RawWindowHandleType::Web);
-        let mut window_handle = Self::empty();
-        window_handle.id = value.id_1 as u32;
+        let window_handle = Self::new(value.id_1 as u32);
         window_handle
     }
 }
@@ -36,7 +35,7 @@ impl From<WebDisplayHandle> for VeryRawDisplayHandle {
 impl From<VeryRawDisplayHandle> for WebDisplayHandle {
     fn from(value: VeryRawDisplayHandle) -> Self {
         assert_eq!(value.handle_type, RawDisplayHandleType::Web);
-        let window_handle = Self::empty();
+        let window_handle = Self::new();
         window_handle
     }
 }

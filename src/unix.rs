@@ -3,6 +3,8 @@ use raw_window_handle::{
     WaylandWindowHandle, XcbDisplayHandle, XcbWindowHandle, XlibDisplayHandle, XlibWindowHandle,
 };
 use std::ffi::{c_int, c_ulong};
+use std::num::NonZeroU32;
+use std::ptr::NonNull;
 
 use crate::{RawDisplayHandleType, RawWindowHandleType, VeryRawDisplayHandle, VeryRawWindowHandle};
 
@@ -22,8 +24,7 @@ impl From<XlibWindowHandle> for VeryRawWindowHandle {
 impl From<VeryRawWindowHandle> for XlibWindowHandle {
     fn from(value: VeryRawWindowHandle) -> Self {
         assert_eq!(value.handle_type, RawWindowHandleType::Xlib);
-        let mut window_handle = Self::empty();
-        window_handle.window = value.id_1 as c_ulong;
+        let mut window_handle = Self::new(value.id_1 as c_ulong);
         window_handle.visual_id = value.id_2 as c_ulong;
         window_handle
     }
@@ -33,7 +34,10 @@ impl From<XlibDisplayHandle> for VeryRawDisplayHandle {
     fn from(value: XlibDisplayHandle) -> Self {
         Self {
             handle_type: RawDisplayHandleType::Xlib,
-            ptr_1: value.display,
+            ptr_1: value
+                .display
+                .map(|ptr| ptr.as_ptr())
+                .unwrap_or(std::ptr::null_mut()),
             id_1: value.screen as u64,
         }
     }
@@ -42,9 +46,8 @@ impl From<XlibDisplayHandle> for VeryRawDisplayHandle {
 impl From<VeryRawDisplayHandle> for XlibDisplayHandle {
     fn from(value: VeryRawDisplayHandle) -> Self {
         assert_eq!(value.handle_type, RawDisplayHandleType::Xlib);
-        let mut window_handle = Self::empty();
-        window_handle.display = value.ptr_1;
-        window_handle.screen = value.id_1 as c_int;
+
+        let window_handle = Self::new(NonNull::new(value.ptr_1), value.id_1 as c_int);
         window_handle
     }
 }
@@ -56,8 +59,8 @@ impl From<XcbWindowHandle> for VeryRawWindowHandle {
             ptr_1: std::ptr::null_mut(),
             ptr_2: std::ptr::null_mut(),
             ptr_3: std::ptr::null_mut(),
-            id_1: value.window as u64,
-            id_2: value.visual_id as u64,
+            id_1: value.window.get() as u64,
+            id_2: value.visual_id.map(|id| id.get()).unwrap_or(0) as u64,
         }
     }
 }
@@ -65,9 +68,8 @@ impl From<XcbWindowHandle> for VeryRawWindowHandle {
 impl From<VeryRawWindowHandle> for XcbWindowHandle {
     fn from(value: VeryRawWindowHandle) -> Self {
         assert_eq!(value.handle_type, RawWindowHandleType::Xcb);
-        let mut window_handle = Self::empty();
-        window_handle.window = value.id_1 as u32;
-        window_handle.visual_id = value.id_2 as u32;
+        let mut window_handle = Self::new(NonZeroU32::new(value.id_1 as u32).unwrap());
+        window_handle.visual_id = NonZeroU32::new(value.id_2 as u32);
         window_handle
     }
 }
@@ -76,7 +78,10 @@ impl From<XcbDisplayHandle> for VeryRawDisplayHandle {
     fn from(value: XcbDisplayHandle) -> Self {
         Self {
             handle_type: RawDisplayHandleType::Xcb,
-            ptr_1: value.connection,
+            ptr_1: value
+                .connection
+                .map(|value| value.as_ptr())
+                .unwrap_or(std::ptr::null_mut()),
             id_1: value.screen as u64,
         }
     }
@@ -85,9 +90,7 @@ impl From<XcbDisplayHandle> for VeryRawDisplayHandle {
 impl From<VeryRawDisplayHandle> for XcbDisplayHandle {
     fn from(value: VeryRawDisplayHandle) -> Self {
         assert_eq!(value.handle_type, RawDisplayHandleType::Xcb);
-        let mut window_handle = Self::empty();
-        window_handle.connection = value.ptr_1;
-        window_handle.screen = value.id_1 as c_int;
+        let window_handle = Self::new(NonNull::new(value.ptr_1), value.id_1 as c_int);
         window_handle
     }
 }
@@ -96,7 +99,7 @@ impl From<WaylandWindowHandle> for VeryRawWindowHandle {
     fn from(value: WaylandWindowHandle) -> Self {
         Self {
             handle_type: RawWindowHandleType::Wayland,
-            ptr_1: value.surface,
+            ptr_1: value.surface.as_ptr(),
             ptr_2: std::ptr::null_mut(),
             ptr_3: std::ptr::null_mut(),
             id_1: Default::default(),
@@ -108,8 +111,7 @@ impl From<WaylandWindowHandle> for VeryRawWindowHandle {
 impl From<VeryRawWindowHandle> for WaylandWindowHandle {
     fn from(value: VeryRawWindowHandle) -> Self {
         assert_eq!(value.handle_type, RawWindowHandleType::Wayland);
-        let mut window_handle = Self::empty();
-        window_handle.surface = value.ptr_1;
+        let window_handle = Self::new(NonNull::new(value.ptr_1).unwrap());
         window_handle
     }
 }
@@ -118,7 +120,7 @@ impl From<WaylandDisplayHandle> for VeryRawDisplayHandle {
     fn from(value: WaylandDisplayHandle) -> Self {
         Self {
             handle_type: RawDisplayHandleType::Wayland,
-            ptr_1: value.display,
+            ptr_1: value.display.as_ptr(),
             id_1: Default::default(),
         }
     }
@@ -127,8 +129,7 @@ impl From<WaylandDisplayHandle> for VeryRawDisplayHandle {
 impl From<VeryRawDisplayHandle> for WaylandDisplayHandle {
     fn from(value: VeryRawDisplayHandle) -> Self {
         assert_eq!(value.handle_type, RawDisplayHandleType::Wayland);
-        let mut window_handle = Self::empty();
-        window_handle.display = value.ptr_1;
+        let window_handle = Self::new(NonNull::new(value.ptr_1).unwrap());
         window_handle
     }
 }
@@ -149,8 +150,7 @@ impl From<DrmWindowHandle> for VeryRawWindowHandle {
 impl From<VeryRawWindowHandle> for DrmWindowHandle {
     fn from(value: VeryRawWindowHandle) -> Self {
         assert_eq!(value.handle_type, RawWindowHandleType::Drm);
-        let mut window_handle = Self::empty();
-        window_handle.plane = value.id_1 as u32;
+        let window_handle = Self::new(value.id_1 as u32);
         window_handle
     }
 }
@@ -168,8 +168,7 @@ impl From<DrmDisplayHandle> for VeryRawDisplayHandle {
 impl From<VeryRawDisplayHandle> for DrmDisplayHandle {
     fn from(value: VeryRawDisplayHandle) -> Self {
         assert_eq!(value.handle_type, RawDisplayHandleType::Drm);
-        let mut window_handle = Self::empty();
-        window_handle.fd = value.id_1 as i32;
+        let window_handle = Self::new(value.id_1 as i32);
         window_handle
     }
 }
@@ -178,7 +177,7 @@ impl From<GbmWindowHandle> for VeryRawWindowHandle {
     fn from(value: GbmWindowHandle) -> Self {
         Self {
             handle_type: RawWindowHandleType::Gbm,
-            ptr_1: value.gbm_surface,
+            ptr_1: value.gbm_surface.as_ptr(),
             ptr_2: std::ptr::null_mut(),
             ptr_3: std::ptr::null_mut(),
             id_1: Default::default(),
@@ -190,8 +189,7 @@ impl From<GbmWindowHandle> for VeryRawWindowHandle {
 impl From<VeryRawWindowHandle> for GbmWindowHandle {
     fn from(value: VeryRawWindowHandle) -> Self {
         assert_eq!(value.handle_type, RawWindowHandleType::Gbm);
-        let mut window_handle = Self::empty();
-        window_handle.gbm_surface = value.ptr_1;
+        let window_handle = Self::new(NonNull::new(value.ptr_1).unwrap());
         window_handle
     }
 }
@@ -200,7 +198,7 @@ impl From<GbmDisplayHandle> for VeryRawDisplayHandle {
     fn from(value: GbmDisplayHandle) -> Self {
         Self {
             handle_type: RawDisplayHandleType::Gbm,
-            ptr_1: value.gbm_device,
+            ptr_1: value.gbm_device.as_ptr(),
             id_1: Default::default(),
         }
     }
@@ -209,8 +207,7 @@ impl From<GbmDisplayHandle> for VeryRawDisplayHandle {
 impl From<VeryRawDisplayHandle> for GbmDisplayHandle {
     fn from(value: VeryRawDisplayHandle) -> Self {
         assert_eq!(value.handle_type, RawDisplayHandleType::Gbm);
-        let mut window_handle = Self::empty();
-        window_handle.gbm_device = value.ptr_1;
+        let window_handle = Self::new(NonNull::new(value.ptr_1).unwrap());
         window_handle
     }
 }

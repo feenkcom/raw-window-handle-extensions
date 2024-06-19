@@ -1,11 +1,12 @@
 use crate::{RawDisplayHandleType, RawWindowHandleType, VeryRawDisplayHandle, VeryRawWindowHandle};
 use raw_window_handle::{AndroidDisplayHandle, AndroidNdkWindowHandle};
+use std::ptr::NonNull;
 
 impl From<AndroidNdkWindowHandle> for VeryRawWindowHandle {
     fn from(value: AndroidNdkWindowHandle) -> Self {
         Self {
             handle_type: RawWindowHandleType::AndroidNdk,
-            ptr_1: value.a_native_window,
+            ptr_1: value.a_native_window.as_ptr(),
             ptr_2: std::ptr::null_mut(),
             ptr_3: std::ptr::null_mut(),
             id_1: Default::default(),
@@ -17,9 +18,10 @@ impl From<AndroidNdkWindowHandle> for VeryRawWindowHandle {
 impl From<VeryRawWindowHandle> for AndroidNdkWindowHandle {
     fn from(value: VeryRawWindowHandle) -> Self {
         assert_eq!(value.handle_type, RawWindowHandleType::AndroidNdk);
-        let mut window_handle = Self::empty();
-        window_handle.a_native_window = value.ptr_1;
-        window_handle
+        Self::new(
+            NonNull::new(value.ptr_1.into())
+                .expect("Android native window pointer must not be null"),
+        )
     }
 }
 
@@ -36,7 +38,6 @@ impl From<AndroidDisplayHandle> for VeryRawDisplayHandle {
 impl From<VeryRawDisplayHandle> for AndroidDisplayHandle {
     fn from(value: VeryRawDisplayHandle) -> Self {
         assert_eq!(value.handle_type, RawDisplayHandleType::Android);
-        let window_handle = Self::empty();
-        window_handle
+        Self::new()
     }
 }
